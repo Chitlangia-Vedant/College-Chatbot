@@ -1,8 +1,4 @@
 # 🎓 College Chatbot — Teammate Setup Guide
-
-> **This guide assumes you have never used Git, GitHub, or this project before.  
-> Follow every step carefully and you will be ready to contribute in no time!**
-
 ---
 
 ## 📚 Table of Contents
