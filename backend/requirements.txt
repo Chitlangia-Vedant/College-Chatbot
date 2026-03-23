@@ -1,0 +1,26 @@
+fastapi
+uvicorn
+
+# LangChain core + ecosystem
+langchain
+langchain-core
+langchain-community
+langchain-text-splitters
+langchain-chroma
+langchain-ollama
+
+# Vector database
+chromadb
+
+# PDF loading
+pypdf
+
+# Environment & utilities
+python-dotenv
+pydantic
+requests
+python-multipart
+
+# Frontend
+streamlit
+
