@@ -97,17 +97,33 @@ Ollama runs the AI model locally on your machine — no internet connection or A
 1. Go to https://ollama.com/download
 2. Download and install the **Windows** version
 3. **Restart your computer** after installation
+**Verify it worked:**
+```powershell
+ollama --version
+```
 4. Open PowerShell and download the AI model the project uses:
 ```powershell
 ollama pull phi
 ```
 > ⏳ This downloads the Phi model — it may take several minutes depending on your internet speed.
 
-**Verify it worked:**
-```powershell
-ollama --version
-```
+**Test Phi Locally**
 
+Run:
+```powershell
+ollama run phi
+```
+Ask something simple:
+
+What is FastAPI?
+
+If you get a response → model works locally.
+
+5. For embeddings (important for RAG):
+Run:
+```powershell
+ollama pull nomic-embed-text
+```
 > ⚠️ If `ollama` is not recognized inside VS Code terminal after installing, fully close and reopen VS Code.
 
 ---
@@ -155,12 +171,13 @@ cd C:\Users\YourName\Documents
 ```powershell
 python -m venv My_Env
 ```
+**[Your project structure should be like this](#project-structure-explained)**
 
 **Activate it:**
 ```powershell
 .\My_Env\Scripts\Activate.ps1
 ```
-✅ You will know it is activated when you see `(My_Env)` at the start of your terminal line.
+✅ You will know it is activated when you see `(My_Env)` at the start of your terminal line.(IMP)
 
 **Go into the backend folder:**
 ```powershell
@@ -177,7 +194,16 @@ python -m pip install -r requirements.txt
 ```powershell
 New-Item .env
 ```
-Ask your team leader what content to put inside the `.env` file — it stores local configuration. **Never share this file or upload it to GitHub.**
+Keep `.env` empty
+### Important: .gitignore
+
+The repository already ignores sensitive files like:
+
+.env  
+My_Env/  
+vectorstore/
+
+Never commit these files to GitHub.
 
 ---
 
@@ -193,6 +219,7 @@ You need **two terminals** open at the same time — one for the backend, one fo
 ### Terminal 1 — Start the Backend
 
 Make sure `(My_Env)` is visible in your terminal, then navigate to the backend folder:
+
 ```powershell
 cd C:\Users\YourName\Documents\College-Chatbot\backend
 python -m uvicorn app.main:app --reload --port 8000
@@ -238,12 +265,16 @@ http://localhost:8501
 #### 1. Always pull the latest code first:
 ```powershell
 cd C:\Users\YourName\Documents\College-Chatbot
-git pull
+git pull origin main
 ```
 > This downloads any changes your teammates made. **Always do this before starting work.**
 #### 2.Always create a new branch before working:
 ```powershell
-powershellgit checkout -b your-name-feature-name
+git checkout -b your-branch-name (first time) 
+# OR 
+git checkout your-branch-name (if branch already exists)
+
+git branch (Confirms the branch you are working on)
 ```
 ### After making changes — save and share your work:
 
@@ -258,7 +289,7 @@ git add .
 git commit -m "what you changed"
 
 # Step 4 - Share with the team
-git push vedant-pdf-upload-fix
+git push origin vedant-pdf-upload-fix
 ```
 
 **Example commit messages:**
@@ -268,12 +299,12 @@ git push vedant-pdf-upload-fix
 
 ### The daily workflow in short:
 ```
-git pull          → get latest from teammates
-git checkout -b your-name-feature-name -> Create new branch
+git pull                                   → get latest from teammates
+git checkout -b your-name-feature-name     → create a new branch
 ... do your work ...
-git add .         → stage changes
-git commit -m ""  → save snapshot
-git push origin your-name-feature-name → share with team
+git add .                                  → stage changes
+git commit -m "explain"                    → save snapshot
+git push origin your-name-feature-name     → share with team
 ```
 
 ---
@@ -349,13 +380,26 @@ C:\Users\YourName\Documents\My_Env\Scripts\Activate.ps1
 - Make sure you uploaded a PDF before asking questions
 - Try deleting the `vectorstore` folder and re-uploading your PDF
 
----
+### ❌ Merge conflict after git pull
 
-## 🆘 Need help?
+If Git shows a conflict:
 
-Contact your team leader or open an issue on GitHub:  
-**https://github.com/Chitlangia-Vedant/College-Chatbot/issues**
+1. Open the conflicting file
+2. Look for:
+```
+<<<<<<< HEAD
+your code
+=======
+teammate code
+>>>>>>> branch
+```
 
----
+3. Choose the correct code
+4. Save the file
 
-*Built following the tutorial by Asif Khan on Towards AI — Happy coding! 🚀*
+Then run:
+```powershell
+git add .
+git commit -m "Resolved merge conflict"
+```
+
