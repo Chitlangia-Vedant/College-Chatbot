@@ -285,7 +285,7 @@ git add .
 git commit -m "what you changed"
 
 # Step 4 - Share with the team
-git push origin vedant-pdf-upload-fix
+git push origin your-branch-name
 ```
 
 **Example commit messages:**
@@ -296,11 +296,11 @@ git push origin vedant-pdf-upload-fix
 ### The daily workflow in short:
 ```
 git pull                                   → get latest from teammates
-git checkout -b your-name-feature-name     → create a new branch
+git checkout -b your-branch-name           → create a new branch
 ... do your work ...
 git add .                                  → stage changes
 git commit -m "explain"                    → save snapshot
-git push origin your-name-feature-name     → share with team
+git push origin your-branch-name           → share with team
 ```
 
 ---
