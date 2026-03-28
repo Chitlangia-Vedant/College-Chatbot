@@ -41,14 +41,12 @@ def ingest_pdf(file_path: str):
     }
 
 def ingest_csv(file_path: str):
-    loader = CSVLoader(file_path=file_path)
-    documents = loader.load()
-
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=150
+    loader = CSVLoader(
+        file_path=file_path,
+        encoding="utf-8",
+        source_column="Question" # citations to show the exact question instead of the filename
     )
-    chunks = splitter.split_documents(documents)
+    documents = loader.load()
 
     vectordb = Chroma(
         collection_name=COLLECTION_NAME,
@@ -56,11 +54,10 @@ def ingest_csv(file_path: str):
         embedding_function=embeddings
     )
 
-    vectordb.add_documents(chunks)
+    vectordb.add_documents(documents)
 
     return {
         "rows": len(documents),
-        "chunks": len(chunks)
     }
 
 
