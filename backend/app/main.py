@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from app.llm import llm, rag_answer
 from app.schemas import QuestionRequest
-from app.rag import ingest_pdf
+from app.rag import ingest_pdf, ingest_csv
 from pathlib import Path
 import shutil
 
@@ -36,6 +36,16 @@ def upload_pdf(file: UploadFile = File(...)):
 
     chunks = ingest_pdf(str(file_path))
     return {"message": "PDF ingested successfully", "chunks": chunks}
+
+@app.post("/upload-csv")
+def upload_csv(file: UploadFile = File(...)):
+    file_path = UPLOAD_DIR / file.filename
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    result = ingest_csv(str(file_path))
+    return {"message": "CSV ingested successfully", "chunks": result}
 
 
 @app.post("/ask-pdf")

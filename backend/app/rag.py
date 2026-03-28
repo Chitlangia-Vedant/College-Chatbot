@@ -1,4 +1,4 @@
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader,CSVLoader
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
@@ -37,6 +37,29 @@ def ingest_pdf(file_path: str):
 
     return {
         "pages": len({doc.metadata.get("page") for doc in documents}),
+        "chunks": len(chunks)
+    }
+
+def ingest_csv(file_path: str):
+    loader = CSVLoader(file_path=file_path)
+    documents = loader.load()
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=150
+    )
+    chunks = splitter.split_documents(documents)
+
+    vectordb = Chroma(
+        collection_name=COLLECTION_NAME,
+        persist_directory=str(VECTOR_DIR),
+        embedding_function=embeddings
+    )
+
+    vectordb.add_documents(chunks)
+
+    return {
+        "rows": len(documents),
         "chunks": len(chunks)
     }
 
