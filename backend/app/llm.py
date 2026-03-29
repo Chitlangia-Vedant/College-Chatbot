@@ -2,10 +2,7 @@ import os
 from dotenv import load_dotenv
 from langchain_ollama import OllamaLLM
 
-from langchain_core.runnables import RunnableWithMessageHistory
-from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
 from app.rag import get_retriever_with_sources
 
 
@@ -14,40 +11,24 @@ llm = OllamaLLM(model="phi",temperature=0.2)
 
 retriever = get_retriever_with_sources() 
 
-# Prompt (from langchain-core)
-prompt = PromptTemplate(
-    input_variables=["chat_history", "question"],
-    template="""
-You are a helpful assistant.
-
-Conversation so far:
-{chat_history}
-
-User question:
-{question}
-
-Answer clearly and concisely:
-"""
-)
-
-
 rag_prompt = PromptTemplate(
-    input_variables=["context", "question"],
+    input_variables=["context", "question", "chat_history"],
     template="""
-Answer the question ONLY using the context below.
-If the answer is not present, say "I don't know".
+    You are the official, helpful FAQ assistant for the college.
+    Answer the user's question accurately using ONLY the context provided below.
+    If the answer is not present in the context, politely state that you do not have that specific information and advise the user to contact the administration at admissions@college.edu.
 
-Conversation so far:
-{chat_history}
+    Conversation so far:
+    {chat_history}
 
-Context:
-{context}
+    Context:
+    {context}
 
-Question:
-{question}
+    Question:
+    {question}
 
-Answer:
-"""
+    Answer:
+    """
 )
 
 def rag_answer(question: str, chat_history: str):
@@ -56,7 +37,7 @@ def rag_answer(question: str, chat_history: str):
     # 1. If retriever confidence is weak → no answer
     if not docs or len(docs) < 2:
         return {
-            "answer": "I don't know. This is not mentioned in the document.",
+            "answer": "I do not have that specific information. Please contact the administration at admissions@college.edu.",
             "sources": []
         }
 
@@ -82,48 +63,30 @@ def rag_answer(question: str, chat_history: str):
         or "I'm sorry" in normalized
     ):
         return {
-            "answer": "I don't know. This is not mentioned in the document.",
+            "answer": "I do not have that specific information. Please contact the administration at admissions@college.edu.",
             "sources": []
         }
 
-    # 3. VALID answer → attach sources
-    sources = sorted({
-        f"{doc.metadata.get('source')} (page {doc.metadata.get('page')})"
-        for doc in docs
-        if doc.metadata.get("source") is not None
-    })
+    # 3. VALID answer → attach sources dynamically
+    raw_sources = set()
+    for doc in docs:
+        source_name = doc.metadata.get("source")
+        if not source_name:
+            continue
+            
+        # If it's a PDF, it will have a 'page'
+        if "page" in doc.metadata:
+            raw_sources.add(f"{source_name} (Page {doc.metadata.get('page')})")
+        # If it's a CSV, it might have a 'row'
+        elif "row" in doc.metadata:
+            raw_sources.add(f"{source_name} (Row {doc.metadata.get('row')})")
+        # If it's a scraped website or question column, just use the name
+        else:
+            raw_sources.add(source_name)
+
+    sources = sorted(list(raw_sources))
 
     return {
         "answer": answer_text,
         "sources": sources
     }
-
-
-
-rag_chain = (
-    {
-        "context": retriever | (lambda docs: "\n\n".join(d.page_content for d in docs)),
-        "question": RunnablePassthrough()
-    }
-    | rag_prompt
-    | llm
-)
-
-# Base chain (RunnableSequence)
-base_chain = prompt | llm
-
-# Simple in-memory message store
-_store = {}
-
-def get_session_history(session_id: str):
-    if session_id not in _store:
-        _store[session_id] = InMemoryChatMessageHistory()
-    return _store[session_id]
-
-# Chain with memory
-chat_chain = RunnableWithMessageHistory(
-    base_chain,
-    get_session_history,
-    input_messages_key="question",
-    history_messages_key="chat_history",
-)
