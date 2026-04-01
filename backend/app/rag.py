@@ -3,6 +3,8 @@ from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from pathlib import Path
+import hashlib
+from langchain_community.document_loaders import WebBaseLoader
 
 # Base directory → backend/
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -68,3 +70,61 @@ def get_retriever_with_sources():
         embedding_function=embeddings
     )
     return vectordb.as_retriever(search_kwargs={"k": 4})
+def ingest_website(url: str):
+    """Scrapes a webpage and adds it to the Chroma vector store."""
+
+    # 1. Load webpage
+    loader = WebBaseLoader(url)
+    documents = loader.load()
+
+    # 2. Split text (same logic as PDF → consistency)
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=250
+    )
+    chunks = splitter.split_documents(documents)
+
+    # 3. Generate unique IDs (prevents duplicates)
+    ids = []
+    for chunk in chunks:
+        chunk.metadata = {"source": url}
+
+        unique_string = f"{url}_{chunk.page_content}"
+        chunk_id = hashlib.md5(unique_string.encode()).hexdigest()
+        ids.append(chunk_id)
+
+    # 4. Store in SAME Chroma DB
+    vectordb = Chroma(
+        collection_name=COLLECTION_NAME,
+        persist_directory=str(VECTOR_DIR),
+        embedding_function=embeddings
+    )
+
+    vectordb.add_documents(chunks, ids=ids)
+
+    return {
+        "source": url,
+        "chunks_added": len(chunks)
+    }
+def delete_by_source(source: str):
+    vectordb = Chroma(
+        collection_name=COLLECTION_NAME,
+        persist_directory=str(VECTOR_DIR),
+        embedding_function=embeddings
+    )
+
+    # Get all stored docs
+    data = vectordb.get()
+
+    ids_to_delete = []
+
+    for i, metadata in enumerate(data["metadatas"]):
+        if metadata.get("source") == source:
+            ids_to_delete.append(data["ids"][i])
+
+    if not ids_to_delete:
+        return {"deleted": 0}
+
+    vectordb.delete(ids=ids_to_delete)
+
+    return {"deleted": len(ids_to_delete)}

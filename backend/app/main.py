@@ -4,6 +4,10 @@ from app.schemas import QuestionRequest
 from app.rag import ingest_pdf, ingest_csv
 from pathlib import Path
 import shutil
+from app.schemas import QuestionRequest, URLRequest
+from app.rag import ingest_pdf, ingest_csv, ingest_website
+from app.schemas import DeleteRequest
+from app.rag import delete_by_source
 
 app = FastAPI(title="AI Chatbot Backend")
 
@@ -54,3 +58,23 @@ def ask_pdf(payload: QuestionRequest):
         payload.question,
         payload.chat_history
     )
+@app.post("/upload-url")
+def upload_url(payload: URLRequest):
+    try:
+        result = ingest_website(payload.url)
+        return {
+            "message": "Website ingested successfully",
+            "data": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/delete-url")
+def delete_url(payload: DeleteRequest):
+    try:
+        result = delete_by_source(payload.source)
+        return {
+            "message": "Deletion completed",
+            "data": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
