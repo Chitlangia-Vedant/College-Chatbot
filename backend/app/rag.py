@@ -1,10 +1,15 @@
-from langchain_community.document_loaders import PyPDFLoader,CSVLoader
+from langchain_community.document_loaders import PyPDFLoader,CSVLoader, WebBaseLoader
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from pathlib import Path
+from datetime import datetime
+from app.logger import setup_logger
+import logging
+import os
 import hashlib
-from langchain_community.document_loaders import WebBaseLoader
+
+logger = setup_logger("vector_database")
 
 # Base directory → backend/
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -18,6 +23,12 @@ VECTOR_DIR.mkdir(parents=True, exist_ok=True)
 
 embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
+vectordb = Chroma(
+    collection_name=COLLECTION_NAME,
+    persist_directory=str(VECTOR_DIR),
+    embedding_function=embeddings
+)
+
 
 def ingest_pdf(file_path: str):
     loader = PyPDFLoader(file_path)
@@ -29,16 +40,22 @@ def ingest_pdf(file_path: str):
     )
     chunks = splitter.split_documents(documents)
 
-    vectordb = Chroma(
-        collection_name=COLLECTION_NAME,
-        persist_directory=str(VECTOR_DIR),
-        embedding_function=embeddings
-    )
+    # Standardize source and generate unique IDs
+    filename = os.path.basename(file_path)
+    current_date = datetime.now().strftime("%Y-%m-%d") # Gets today's date like "2024-10-25"
+    ids = []
+    for chunk in chunks:
+        chunk.metadata["source"] = filename 
+        chunk.metadata["date_added"] = current_date
+        chunk.metadata["type"] = "pdf"
+        
+        unique_string = f"{filename}_{chunk.page_content}"
+        ids.append(hashlib.md5(unique_string.encode('utf-8')).hexdigest())
 
-    vectordb.add_documents(chunks)
+    vectordb.add_documents(chunks, ids=ids)
 
     return {
-        "pages": len({doc.metadata.get("page") for doc in documents}),
+        "pages": len({doc.metadata.get("page") for doc in documents}), 
         "chunks": len(chunks)
     }
 
@@ -46,21 +63,25 @@ def ingest_csv(file_path: str):
     loader = CSVLoader(
         file_path=file_path,
         encoding="utf-8",
-        source_column="Question" # citations to show the exact question instead of the filename
+        source_column="Question" 
     )
     documents = loader.load()
 
-    vectordb = Chroma(
-        collection_name=COLLECTION_NAME,
-        persist_directory=str(VECTOR_DIR),
-        embedding_function=embeddings
-    )
+    # Standardize source and generate unique IDs
+    filename = os.path.basename(file_path)
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    ids = []
+    for doc in documents:
+        doc.metadata["source"] = filename 
+        doc.metadata["date_added"] = current_date
+        doc.metadata["type"] = "csv"
+        
+        unique_string = f"{filename}_{doc.page_content}"
+        ids.append(hashlib.md5(unique_string.encode('utf-8')).hexdigest())
 
-    vectordb.add_documents(documents)
+    vectordb.add_documents(documents, ids=ids)
 
-    return {
-        "rows": len(documents),
-    }
+    return {"rows": len(documents)}
 
 
 def get_retriever_with_sources():
@@ -70,6 +91,7 @@ def get_retriever_with_sources():
         embedding_function=embeddings
     )
     return vectordb.as_retriever(search_kwargs={"k": 4})
+
 def ingest_website(url: str):
     """Scrapes a webpage and adds it to the Chroma vector store."""
 
@@ -84,21 +106,20 @@ def ingest_website(url: str):
     )
     chunks = splitter.split_documents(documents)
 
+    current_date = datetime.now().strftime("%Y-%m-%d")
+
     # 3. Generate unique IDs (prevents duplicates)
     ids = []
     for chunk in chunks:
-        chunk.metadata = {"source": url}
+        chunk.metadata = {
+            "source": url,
+            "date_added": current_date,
+            "type": "website"
+        }
 
         unique_string = f"{url}_{chunk.page_content}"
         chunk_id = hashlib.md5(unique_string.encode()).hexdigest()
         ids.append(chunk_id)
-
-    # 4. Store in SAME Chroma DB
-    vectordb = Chroma(
-        collection_name=COLLECTION_NAME,
-        persist_directory=str(VECTOR_DIR),
-        embedding_function=embeddings
-    )
 
     vectordb.add_documents(chunks, ids=ids)
 
@@ -106,25 +127,37 @@ def ingest_website(url: str):
         "source": url,
         "chunks_added": len(chunks)
     }
+
 def delete_by_source(source: str):
-    vectordb = Chroma(
-        collection_name=COLLECTION_NAME,
-        persist_directory=str(VECTOR_DIR),
-        embedding_function=embeddings
-    )
+    """Deletes any chunks matching the exact source (filename or URL)"""
 
-    # Get all stored docs
-    data = vectordb.get()
+    try:
+        # Optimized deletion: Use Chroma's built-in metadata filter
+        matching_docs = vectordb.get(where={"source": source})
+        ids_to_delete = matching_docs.get("ids", [])
 
-    ids_to_delete = []
+        if not ids_to_delete:
+            return {"deleted": 0, "message": f"Source '{source}' not found in database."}
 
-    for i, metadata in enumerate(data["metadatas"]):
-        if metadata.get("source") == source:
-            ids_to_delete.append(data["ids"][i])
-
-    if not ids_to_delete:
-        return {"deleted": 0}
-
-    vectordb.delete(ids=ids_to_delete)
-
-    return {"deleted": len(ids_to_delete)}
+        vectordb.delete(ids=ids_to_delete)
+        return {"deleted": len(ids_to_delete), "message": f"Successfully deleted {source}"}
+        
+    except Exception as e:
+        return {"deleted": 0, "error": str(e)}
+    
+def get_all_sources():
+    """Retrieves a list of all unique sources currently in the database."""
+   
+    try:
+        data = vectordb.get()
+        unique_sources = set()
+        
+        # Look through all metadata and grab the "source" tags
+        for metadata in data.get("metadatas", []):
+            if metadata and "source" in metadata:
+                unique_sources.add(metadata["source"])
+                
+        return sorted(list(unique_sources))
+    except Exception as e:
+        logger.error(f"Error fetching sources: {e}")
+        return []
