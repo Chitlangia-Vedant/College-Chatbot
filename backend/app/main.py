@@ -10,6 +10,8 @@ from app.rag import ingest_pdf, ingest_csv, ingest_website, delete_by_source, ge
 from pathlib import Path
 import shutil
 import os
+import csv
+import io
 
 # 1. Load the variables from the .env file
 load_dotenv()
@@ -92,6 +94,31 @@ def upload_csv(file: UploadFile = File(...)):
     # 1. Validate extension
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed.")
+    
+    # --- NEW: Strict Column Validation ---
+    try:
+        # Read the first line of the file (the headers) without saving it
+        header_line = file.file.readline().decode('utf-8-sig') # utf-8-sig handles Excel's hidden BOM characters
+        file.file.seek(0) # IMPORTANT: Reset the cursor back to 0 so we can save the file later!
+        
+        # Parse the headers
+        csv_reader = csv.reader(io.StringIO(header_line))
+        headers = next(csv_reader, [])
+        
+        # Clean up the headers (removes accidental spaces, e.g., " Question " -> "Question")
+        headers = [h.strip() for h in headers]
+        
+        # Verify that the columns are EXACTLY "Question" and "Answer" (order doesn't matter)
+        if set(headers) != {"Question", "Answer"}:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Upload failed. The CSV must contain ONLY 'Question' and 'Answer' columns. We found: {headers}"
+            )
+    except HTTPException:
+        raise # Passes our exact error message to the user
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not read CSV file: {str(e)}")
+    # -------------------------------------
         
     file_path = UPLOAD_DIR / file.filename
 
