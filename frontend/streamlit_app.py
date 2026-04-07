@@ -1,150 +1,213 @@
+import os
 import streamlit as st
 import requests
+import time
+from dotenv import load_dotenv
+
+load_dotenv()
 
 API_BASE = "http://127.0.0.1:8000"
 
-# -------------------------------
-# Page Config
-# -------------------------------
 st.set_page_config(
-    page_title="RAG Chatbot",
-    page_icon="📄",
+    page_title="SGSITS Assistant",
+    page_icon="🎓",
     layout="wide"
 )
 
-# -------------------------------
-# Session State Init
-# -------------------------------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# ── THEME STATE ──
+if "theme" not in st.session_state:
+    st.session_state.theme = "dark"
 
-if "documents" not in st.session_state:
-    st.session_state.documents = []
+if "chat_sessions" not in st.session_state:
+    st.session_state.chat_sessions = [[]]
 
-if "chat_id" not in st.session_state:
-    st.session_state.chat_id = 1
+if "current_chat" not in st.session_state:
+    st.session_state.current_chat = 0
 
-# -------------------------------
-# Sidebar (Documents & Controls)
-# -------------------------------
-with st.sidebar:
-    st.title("📄 RAG Chatbot")
-    st.caption("Local Phi • Ollama • Chroma")
+# ── THEME CSS ──
+def get_css():
+    if st.session_state.theme == "dark":
+        return """
+        <style>
+        body {background: #0F172A; color: white;}
 
-    st.divider()
-    st.subheader("📂 Upload Documents")
+        .chat-user {
+            background:#1E3A8A; 
+            color:white;
+            display:inline-block;
+            width:fit-content;
+            max-width:65%;
+            word-wrap:break-word;
+            margin-left:auto;
+        }
 
-    uploaded_files = st.file_uploader(
-        "Upload one or more PDFs",
-        type=["pdf"],
-        accept_multiple_files=True
-    )
-
-    if uploaded_files and st.button("📥 Ingest PDFs"):
-        with st.spinner("Ingesting documents..."):
-            for file in uploaded_files:
-                files = {
-                    "file": (file.name, file, "application/pdf")
-                }
-                response = requests.post(
-                    f"{API_BASE}/upload-pdf",
-                    files=files
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    st.session_state.documents.append({
-                        "name": file.name,
-                        "pages": data.get("pages",0),
-                        "chunks": data.get("chunks", 0)
-                    })
-                else:
-                    st.error(f"Failed to ingest {file.name}")
-
-        st.success("Documents ingested successfully")
-
-    # -------------------------------
-    # Document Summary
-    # -------------------------------
-    if st.session_state.documents:
-        st.divider()
-        st.subheader("📊 Document Overview")
-
-        for doc in st.session_state.documents:
-            st.markdown(
-                f"""
-        **{doc['name']}**
-        - Pages: `{doc['pages']}`
-        - Chunks indexed: `{doc['chunks']}`
+        .chat-bot {
+            background:#1F2937; 
+            color:#E5E7EB;
+            display:inline-block;
+            width:fit-content;
+            max-width:65%;
+            word-wrap:break-word;
+        }
+        </style>
         """
-            )
+    else:
+        return """
+        <style>
+        body {background: #F9FAFB; color:black;}
 
-    st.divider()
+        .chat-user {
+            background:#2563EB; 
+            color:white;
+            display:inline-block;
+            width:fit-content;
+            max-width:65%;
+            word-wrap:break-word;
+            margin-left:auto;
+        }
 
-    # -------------------------------
-    # New Chat
-    # -------------------------------
-    if st.button("🧹 New Chat"):
-        st.session_state.messages = []
-        st.session_state.chat_id += 1
+        .chat-bot {
+            background:#E5E7EB; 
+            color:black;
+            display:inline-block;
+            width:fit-content;
+            max-width:65%;
+            word-wrap:break-word;
+        }
+        </style>
+        """
+
+st.markdown(get_css(), unsafe_allow_html=True)
+
+# ── SIDEBAR ──
+with st.sidebar:
+    st.markdown("### 🎓 SGSITS Assistant")
+
+    if st.button("➕ New Chat"):
+        st.session_state.chat_sessions.append([])
+        st.session_state.current_chat = len(st.session_state.chat_sessions) - 1
         st.rerun()
 
-# -------------------------------
-# Main Chat Area
-# -------------------------------
-st.header("💬 Ask Questions from Your Documents")
+    st.markdown("---")
 
-if not st.session_state.documents:
-    st.info("Upload and ingest PDFs from the sidebar to begin.")
-else:
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
+    for i, chat in enumerate(st.session_state.chat_sessions):
+        label = f"Chat {i+1}"
+        if st.button(label, key=f"chat_{i}"):
+            st.session_state.current_chat = i
+            st.rerun()
 
-    question = st.chat_input("Ask something about the uploaded documents...")
+    st.markdown("---")
 
-    if question:
+    if st.button("🧹 Clear Current Chat"):
+        st.session_state.chat_sessions[st.session_state.current_chat] = []
+        st.rerun()
 
-        with st.spinner("Searching documents..."):
+    st.markdown("---")
 
-            def build_chat_history(messages, max_turns=6):
-                history = []
-                for msg in messages[-max_turns * 2:]:
-                    role = "User" if msg["role"] == "user" else "Assistant"
-                    history.append(f"{role}: {msg['content']}")
-                return "\n".join(history)
-            
-            chat_history = build_chat_history(st.session_state.messages)
+    if st.button("🌙 Toggle Theme"):
+        st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
+        st.rerun()
 
-            st.session_state.messages.append(
-            {"role": "user", "content": question}
+# ── CURRENT CHAT ──
+messages = st.session_state.chat_sessions[st.session_state.current_chat]
+
+# ── HEADER ──
+st.markdown("""
+<div style="padding:10px 0;">
+<h2>🎓 SGSITS Academic Assistant</h2>
+<p style="opacity:0.7;">Ask anything about SGSITS</p>
+</div>
+""", unsafe_allow_html=True)
+
+# ── EMPTY STATE ──
+if not messages:
+    st.markdown("""
+    <div style="text-align:center; margin-top:80px;">
+        <h3>👋 Welcome!</h3>
+        <p>Ask about admissions, syllabus, fees, placements.</p>
+        <p style="font-size:0.8rem;">Example: "What is SGSITS fee structure?"</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ── CHAT DISPLAY ──
+for msg in messages:
+    if msg["role"] == "user":
+        st.markdown(f"""
+        <div style="display:flex; justify-content:flex-end;">
+            <div class='chat-user' style='padding:10px;border-radius:10px;margin:5px 0'>
+                {msg['content']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div style="display:flex; justify-content:flex-start;">
+            <div class='chat-bot' style='padding:10px;border-radius:10px;margin:5px 0'>
+                {msg['content']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ── INPUT ──
+question = st.chat_input("💬 Ask anything about SGSITS...")
+
+if question:
+    messages.append({"role": "user", "content": question})
+
+    # ✅ FIXED USER ALIGNMENT
+    st.markdown(f"""
+    <div style="display:flex; justify-content:flex-end;">
+        <div class='chat-user' style='padding:10px;border-radius:10px;margin:5px 0'>
+            {question}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    response_placeholder = st.empty()
+    full_response = ""
+
+    try:
+        history_str = "\n".join(
+            [f"{m['role']}: {m['content']}" for m in messages[-5:]]
         )
 
-            response = requests.post(
-                f"{API_BASE}/ask-pdf",
-                json={"question": question, "chat_history": chat_history}
-            )
+        session = requests.Session()
+        response = session.post(
+            f"{API_BASE}/ask-pdf",
+            json={"question": question, "chat_history": history_str},
+            stream=True,
+            timeout=60
+        )
 
         if response.status_code == 200:
-            data = response.json()
-            answer = data.get("answer", "")
-            sources = data.get("sources", [])
+            for chunk in response.iter_content(chunk_size=1, decode_unicode=True):
+                if chunk:
+                    full_response += chunk
+                    response_placeholder.markdown(f"""
+                    <div style="display:flex; justify-content:flex-start;">
+                        <div class='chat-bot' style='padding:10px;border-radius:10px'>
+                            {full_response}▌
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    time.sleep(0.003)
+
+            response_placeholder.markdown(f"""
+            <div style="display:flex; justify-content:flex-start;">
+                <div class='chat-bot' style='padding:10px;border-radius:10px'>
+                    {full_response}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
         else:
-            answer = "Error retrieving answer."
-            sources = []
+            full_response = f"⚠️ Backend Error: {response.status_code}"
+            st.error(full_response)
 
+        session.close()
 
-        st.session_state.messages.append(
-            {"role": "assistant", "content": answer}
-        )
+    except Exception as e:
+        full_response = f"❌ Error: {str(e)}"
+        st.error(full_response)
 
-        if sources and not answer.lower().startswith("i don't know"):
-            st.session_state.messages.append(
-                {
-                    "role": "assistant",
-                    "content": "📌 **Sources:**\n" + "\n".join(f"- {s}" for s in sources)
-                }
-            )
-
-
-        st.rerun()
+    messages.append({"role": "assistant", "content": full_response})
