@@ -12,8 +12,16 @@ langchain-ollama
 # Vector database
 chromadb
 
-# PDF loading
+# PDF loading & Structural Chunking
 pypdf
+unstructured-client
+unstructured[pdf]
+
+# Web Scraping & HTML Parsing
+selenium
+unstructured
+lxml
+beautifulsoup4
 
 # Environment & utilities
 python-dotenv
@@ -23,4 +31,3 @@ python-multipart
 
 # Frontend
 streamlit
-

@@ -130,84 +130,59 @@ if not messages:
     """, unsafe_allow_html=True)
 
 # ── CHAT DISPLAY ──
+# Use native Streamlit chat messages (this fully supports Markdown!)
 for msg in messages:
-    if msg["role"] == "user":
-        st.markdown(f"""
-        <div style="display:flex; justify-content:flex-end;">
-            <div class='chat-user' style='padding:10px;border-radius:10px;margin:5px 0'>
-                {msg['content']}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-        <div style="display:flex; justify-content:flex-start;">
-            <div class='chat-bot' style='padding:10px;border-radius:10px;margin:5px 0'>
-                {msg['content']}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
 # ── INPUT ──
 question = st.chat_input("💬 Ask anything about SGSITS...")
 
 if question:
+    # 1. Display user's question immediately
+    with st.chat_message("user"):
+        st.markdown(question)
+    
+    # 2. Add user message to history
     messages.append({"role": "user", "content": question})
 
-    # ✅ FIXED USER ALIGNMENT
-    st.markdown(f"""
-    <div style="display:flex; justify-content:flex-end;">
-        <div class='chat-user' style='padding:10px;border-radius:10px;margin:5px 0'>
-            {question}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # 3. Create chat history string (EXCLUDING the current question)
+    # Using messages[:-1] prevents sending the question twice to the backend
+    history_str = "\n".join(
+        [f"{m['role']}: {m['content']}" for m in messages[-6:-1]] 
+    )
 
-    response_placeholder = st.empty()
-    full_response = ""
+    # 4. Stream response from backend
+    with st.chat_message("assistant"):
+        response_placeholder = st.empty()
+        full_response = ""
+        
+        try:
+            session = requests.Session()
+            response = session.post(
+                f"{API_BASE}/ask-pdf",
+                json={"question": question, "chat_history": history_str},
+                stream=True,
+                timeout=None
+            )
 
-    try:
-        history_str = "\n".join(
-            [f"{m['role']}: {m['content']}" for m in messages[-5:]]
-        )
+            if response.status_code == 200:
+                def stream_data():
+                    for chunk in response.iter_content(chunk_size=None, decode_unicode=True):
+                        if chunk:
+                            yield chunk
+                
+                # Streamlit writes the stream and handles all Markdown naturally
+                full_response = st.write_stream(stream_data)
+            else:
+                full_response = f"⚠️ Backend Error: {response.status_code}"
+                st.error(full_response)
+                
+            session.close()
 
-        session = requests.Session()
-        response = session.post(
-            f"{API_BASE}/ask-pdf",
-            json={"question": question, "chat_history": history_str},
-            stream=True,
-            timeout=60
-        )
-
-        if response.status_code == 200:
-            for chunk in response.iter_content(chunk_size=1, decode_unicode=True):
-                if chunk:
-                    full_response += chunk
-                    response_placeholder.markdown(f"""
-                    <div style="display:flex; justify-content:flex-start;">
-                        <div class='chat-bot' style='padding:10px;border-radius:10px'>
-                            {full_response}▌
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    time.sleep(0.003)
-
-            response_placeholder.markdown(f"""
-            <div style="display:flex; justify-content:flex-start;">
-                <div class='chat-bot' style='padding:10px;border-radius:10px'>
-                    {full_response}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        else:
-            full_response = f"⚠️ Backend Error: {response.status_code}"
+        except Exception as e:
+            full_response = f"❌ Error: {str(e)}"
             st.error(full_response)
 
-        session.close()
-
-    except Exception as e:
-        full_response = f"❌ Error: {str(e)}"
-        st.error(full_response)
-
+    # 5. Save assistant response to state
     messages.append({"role": "assistant", "content": full_response})
