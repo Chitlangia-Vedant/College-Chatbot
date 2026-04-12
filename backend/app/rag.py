@@ -34,7 +34,7 @@ vectordb = Chroma(
     embedding_function=embeddings
 )
 
-
+#DO NOT DELETE
 def ingest_pdf(file_path: str):
     filename = os.path.basename(file_path)
     logger.info(f"Action=Ingest_PDF | Status=Started | Source={filename}")
@@ -162,7 +162,8 @@ def ingest_website(url: str):
         logger.error(f"Action=Scrape_URL | Status=Failed | Source={url} | Error={str(e)}")
         # Re-raise so the API returns a 500 error to the admin panel
         raise Exception(f"Dynamic Scraper Error: {str(e)}")
-    
+
+# DO NOT DELETE    
 def ingest_website_header(url: str):
     """Scrapes a webpage with advanced browser-mimicking and logs chunking results."""
     
@@ -204,7 +205,8 @@ def ingest_website_header(url: str):
         # 3. Added Error Log for consistent failure tracking
         logger.error(f"Action=Scrape_URL | Status=Failed | Source={url} | Error={str(e)}")
         raise Exception(f"External Site Error: {str(e)}")
-    
+
+#DO NOT DELETE    
 def ingest_website_semantic(url: str):
     logger.info(f"Action=Scrape_URL | Status=Started | URL={url}")
    
