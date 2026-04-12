@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 import requests
+import time
 from dotenv import load_dotenv
 from pathlib import Path 
 
@@ -85,11 +86,14 @@ st.markdown("""
     .api-dot-green { width: 7px; height: 7px; background: #4CAF50; border-radius: 50%; box-shadow: 0 0 6px #4CAF50; }
     .api-dot-red   { width: 7px; height: 7px; background: #F44336; border-radius: 50%; box-shadow: 0 0 6px #F44336; }
 
-    .login-outer { display: flex; justify-content: center; padding-top: 80px; }
+    /* FIX 1: Login card + input centered together */
+    .login-outer {
+        display: flex; flex-direction: column; align-items: center; padding-top: 80px;
+    }
     .login-card {
         background: rgba(255,255,255,0.03); border: 1px solid rgba(200,149,42,0.2);
         border-top: 3px solid #C8952A; border-radius: 20px; padding: 52px 48px;
-        width: 100%; max-width: 420px; backdrop-filter: blur(10px); text-align: center;
+        width: 460px; backdrop-filter: blur(10px); text-align: center;
     }
     .login-icon { font-size: 3rem; margin-bottom: 20px; display: block; }
     .login-title {
@@ -192,6 +196,8 @@ if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 if "api_status" not in st.session_state:
     st.session_state.api_status = None
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
 
 
 def verify_api():
@@ -232,17 +238,30 @@ st.markdown(f"""
 # LOGIN SCREEN
 # ══════════════════════════════════════════
 if not st.session_state.admin_logged_in:
-    st.markdown('<div class="login-outer">', unsafe_allow_html=True)
+    # Card centered via flex; inputs pinned to same 460px width via CSS
     st.markdown("""
-<div class="login-card">
-    <span class="login-icon">🔐</span>
-    <div class="login-title">Admin Login</div>
-    <div class="login-subtitle">This panel is restricted to authorized<br>college staff only.</div>
+<style>
+    /* Pin the single login column to 460px centered */
+    div[data-testid="column"].login-col > div {
+        display: flex; flex-direction: column; align-items: center;
+    }
+    div[data-testid="column"].login-col .stTextInput,
+    div[data-testid="column"].login-col .stTextInput > div,
+    div[data-testid="column"].login-col .stTextInput input,
+    div[data-testid="column"].login-col .stButton,
+    div[data-testid="column"].login-col .stButton > button {
+        width: 460px !important; max-width: 460px !important;
+    }
+</style>
+<div style="display:flex; justify-content:center; padding-top:80px; margin-bottom:20px;">
+    <div class="login-card">
+        <span class="login-icon">🔐</span>
+        <div class="login-title">Admin Login</div>
+        <div class="login-subtitle">This panel is restricted to authorized<br>college staff only.</div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns([1, 1.2, 1])
+    _, col2, _ = st.columns([1, 1, 1])
     with col2:
         password = st.text_input("Password", type="password", placeholder="Enter admin password", label_visibility="collapsed")
         if st.button("Login →", use_container_width=True):
@@ -261,11 +280,7 @@ else:
         st.caption("Logged in as Administrator")
         st.markdown("---")
 
-        if api_ok:
-            st.success("✅ Backend API is online")
-        else:
-            st.error("❌ Backend API is offline")
-            st.caption(f"Trying: {API_BASE}")
+        # FIX 3: Removed duplicate API status from sidebar (kept only in main content area)
 
         st.markdown("---")
 
@@ -282,6 +297,7 @@ else:
         st.caption("Upload official SGSITS documents (PDF, CSV) or add website URLs.")
 
     st.markdown('<div class="content-area">', unsafe_allow_html=True)
+
 
     dot_class  = "pulse-green" if api_ok else "pulse-red"
     status_val = f"Connected · {API_BASE}" if api_ok else f"Unreachable · {API_BASE}"
@@ -324,7 +340,6 @@ else:
     total_csvs   = sum(1 for d in current_documents if d.get("type") == "CSV")
     total_urls   = sum(1 for d in current_documents if d.get("type") == "URL")
 
-    # The 4-column stat layout automatically spaces beautifully
     st.markdown(f"""
 <div class="stats-row">
     <div class="stat-card">
@@ -354,10 +369,11 @@ else:
 
     uploaded_pdfs = st.file_uploader(
         "Choose PDF files", type=["pdf"],
-        accept_multiple_files=True, label_visibility="collapsed", key="pdf_uploader"
+        accept_multiple_files=True, label_visibility="collapsed", key=f"pdf_uploader_{st.session_state.uploader_key}"
     )
 
     if uploaded_pdfs and st.button("📥 Ingest PDFs into Knowledge Base"):
+        pre_ingest_count = len(current_documents)
         with st.spinner("Ingesting PDFs..."):
             success_count = 0
             for file in uploaded_pdfs:
@@ -375,8 +391,19 @@ else:
                     st.error("Cannot connect to backend server.")
                     break
         if success_count > 0:
-            st.success(f"✅ Successfully ingested {success_count} PDF(s)!")
-            st.rerun() # This will refresh the page and auto-fetch the new docs from backend!
+            st.success(f"✅ {success_count} PDF(s) ingested successfully! Refreshing list...")
+            for _ in range(15):
+                time.sleep(1)
+                try:
+                    check = requests.get(f"{API_BASE}/list-sources", timeout=5)
+                    if check.status_code == 200:
+                        new_sources = check.json().get("sources", [])
+                        if len(new_sources) > pre_ingest_count:
+                            break
+                except Exception:
+                    pass
+            st.session_state.uploader_key += 1
+            st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -388,10 +415,11 @@ else:
 
     uploaded_csvs = st.file_uploader(
         "Choose CSV files", type=["csv"],
-        accept_multiple_files=True, label_visibility="collapsed", key="csv_uploader"
+        accept_multiple_files=True, label_visibility="collapsed", key=f"csv_uploader_{st.session_state.uploader_key}"
     )
 
     if uploaded_csvs and st.button("📥 Ingest CSVs into Knowledge Base"):
+        pre_ingest_count = len(current_documents)
         with st.spinner("Ingesting CSVs..."):
             success_count = 0
             for file in uploaded_csvs:
@@ -404,14 +432,24 @@ else:
                     if response.status_code == 200:
                         success_count += 1
                     else:
-                        # Extract error detail if possible
                         err_msg = response.json().get("detail", f"Status {response.status_code}")
                         st.error(f"Failed to ingest {file.name}: {err_msg}")
                 except requests.exceptions.ConnectionError:
                     st.error("Cannot connect to backend server.")
                     break
         if success_count > 0:
-            st.success(f"✅ Successfully ingested {success_count} CSV(s)!")
+            st.success(f"✅ {success_count} CSV(s) ingested successfully! Refreshing list...")
+            for _ in range(15):
+                time.sleep(1)
+                try:
+                    check = requests.get(f"{API_BASE}/list-sources", timeout=5)
+                    if check.status_code == 200:
+                        new_sources = check.json().get("sources", [])
+                        if len(new_sources) > pre_ingest_count:
+                            break
+                except Exception:
+                    pass
+            st.session_state.uploader_key += 1
             st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -433,6 +471,7 @@ else:
         if not url_input.strip():
             st.warning("Please enter a URL.")
         else:
+            pre_ingest_count = len(current_documents)
             with st.spinner(f"Scraping and ingesting {url_input.strip()}..."):
                 try:
                     res = requests.post(
@@ -442,7 +481,17 @@ else:
                         timeout=120
                     )
                     if res.status_code == 200:
-                        st.success("✅ URL ingested successfully!")
+                        st.success("✅ URL ingested successfully! Refreshing list...")
+                        for _ in range(15):
+                            time.sleep(1)
+                            try:
+                                check = requests.get(f"{API_BASE}/list-sources", timeout=5)
+                                if check.status_code == 200:
+                                    new_sources = check.json().get("sources", [])
+                                    if len(new_sources) > pre_ingest_count:
+                                        break
+                            except Exception:
+                                pass
                         st.rerun()
                     else:
                         st.error(f"❌ Failed to ingest URL. (Status {res.status_code})")
@@ -482,7 +531,6 @@ else:
 </div>
 """, unsafe_allow_html=True)
 
-            # Creating columns for the action buttons
             if doc_type == "URL":
                 btn_col1, btn_col2, btn_col3 = st.columns([0.65, 0.2, 0.15])
             else:
