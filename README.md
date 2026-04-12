@@ -1,402 +1,367 @@
-# 🎓 College Chatbot — Teammate Setup Guide
----
+# 🎓 SGSITS AI Academic Assistant
 
-## 📚 Table of Contents
+<div align="center">
 
-1. [What is this project?](#what-is-this-project)
-2. [What you need to install](#what-you-need-to-install)
-3. [Step 1 — Install Git](#step-1--install-git)
-4. [Step 2 — Install Python](#step-2--install-python)
-5. [Step 3 — Install VS Code](#step-3--install-vs-code)
-6. [Step 4 — Install Ollama and pull the AI model](#step-4--install-ollama-and-pull-the-ai-model)
-7. [Step 5 — Get the project on your computer](#step-5--get-the-project-on-your-computer)
-8. [Step 6 — Set up your Python environment](#step-6--set-up-your-python-environment)
-9. [Step 7 — Run the project](#step-7--run-the-project)
-10. [How to work with Git daily](#how-to-work-with-git-daily)
-11. [Project structure explained](#project-structure-explained)
-12. [Common problems and fixes](#common-problems-and-fixes)
+![Python](https://img.shields.io/badge/Python-3.13-blue?style=for-the-badge\&logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green?style=for-the-badge\&logo=fastapi)
+![Streamlit](https://img.shields.io/badge/Streamlit-Frontend-red?style=for-the-badge\&logo=streamlit)
+![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-black?style=for-the-badge)
+![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector%20Database-purple?style=for-the-badge)
+
+### Production-Ready AI Assistant for Institutional Knowledge Retrieval
+
+A fully local Retrieval-Augmented Generation (RAG) chatbot designed for **SGSITS** to answer academic and administrative queries using institutional documents, FAQs, and website content.
+
+</div>
 
 ---
 
-## What is this project?
+## 🚀 Overview
 
-This is a **College Chatbot** built using a RAG (Retrieval-Augmented Generation) architecture.  
-It lets you upload college documents (PDFs) and ask questions about them — the AI answers using only the content of those documents.
+The **SGSITS AI Academic Assistant** is an enterprise-grade college chatbot that enables students and staff to query institutional knowledge in natural language.
 
-**Tech stack:**
-- **FastAPI** — backend server that handles API requests
-- **Ollama + llama3.2 model** — runs the AI locally on your computer, no internet or API key needed
-- **LangChain** — connects the AI model with the document retrieval system
-- **ChromaDB** — stores document content so the chatbot can search through it
-- **Streamlit** — the chat interface you interact with in the browser
+Built with a **fully local AI stack**, it ensures:
 
----
-
-## What you need to install
-
-| Tool | Purpose | Download |
-|------|---------|----------|
-| Git | Share and sync code with teammates | https://git-scm.com/download/win |
-| Python 3.13 | Run the project | https://www.python.org/downloads/ |
-| VS Code | Code editor | https://code.visualstudio.com/ |
-| Ollama | Run the AI model locally | https://ollama.com/download |
+* 🔒 **100% Local Inference** — No OpenAI/API dependency
+* 📚 **Grounded Responses** — Answers strictly from ingested knowledge
+* ⚡ **Streaming Response Generation** — Real-time token-by-token output
+* 🧠 **Context-Aware Multi-Turn Conversations**
+* 📌 **Automatic Source Citation Generation**
+* 🛡 **Protected Admin Panel with Secure API-Key Access**
 
 ---
 
-## Step 1 — Install Git
+## ✨ Core Features
 
-Git is a tool that lets multiple people work on the same code without overwriting each other's work.
+### 🤖 Intelligent RAG Pipeline
 
-1. Go to https://git-scm.com/download/win
-2. Download and run the installer
-3. Keep clicking **Next** with default options — the defaults are fine
-4. Click **Finish**
+* Conversational Retrieval-Augmented Generation
+* Follow-up Question Reformulation
+* Acronym Expansion (`CSE → Computer Science Engineering`)
+* MMR-based Diverse Retrieval Strategy
+* Semantic Search over Institutional Knowledge
 
-**Verify it worked** — open PowerShell and type:
-```powershell
-git --version
+---
+
+### 📂 Multi-Source Knowledge Ingestion
+
+* Upload PDF Documents
+* Upload FAQ CSV Files (`Question`,`Answer`)
+* Scrape Dynamic Website URLs via Selenium
+* Semantic / Structural Chunking Support
+
+---
+
+### 🔐 Admin Management Dashboard
+
+* Secure Admin Login
+* Protected Ingestion Endpoints via API Key
+* View All Ingested Sources
+* Delete Knowledge Sources
+* Re-Ingest / Update Website Sources
+* Live Backend API Health Monitoring
+
+---
+
+### ⚡ Performance Optimizations
+
+* SQLite LLM Cache for Instant Repeat Responses
+* Background Task Processing for Heavy Ingestion
+* Streaming LLM Responses
+* Structured Logging + Latency Tracking
+
+---
+
+## 🏗 System Architecture
+
+```mermaid
+flowchart TD
+    A[Admin Uploads PDFs / CSV / URLs] --> B[Chunking Pipeline]
+    B --> C[Generate Embeddings]
+    C --> D[Store in ChromaDB]
+
+    E[User Query] --> F[Question Reformulation]
+    F --> G[Retriever MMR Search]
+    G --> H[Prompt Builder]
+    H --> I[Llama 3.2 via Ollama]
+    I --> J[Streaming Response]
+    J --> K[Source Citations]
 ```
-You should see something like `git version 2.x.x`
 
 ---
 
-## Step 2 — Install Python
+## 🛠 Tech Stack
 
-1. Go to https://www.python.org/downloads/
-2. Download **Python 3.13**
-3. Run the installer
-4. ⚠️ **IMPORTANT:** On the first screen, check **"Add Python to PATH"** before clicking Install Now
+| Layer                | Technology               |
+| -------------------- | ------------------------ |
+| **Frontend (User)**  | Streamlit                |
+| **Frontend (Admin)** | Streamlit                |
+| **Backend API**      | FastAPI                  |
+| **LLM Runtime**      | Ollama                   |
+| **Language Model**   | Llama 3.2                |
+| **Embedding Model**  | Nomic-Embed-Text         |
+| **Vector Database**  | ChromaDB                 |
+| **RAG Framework**    | LangChain                |
+| **Web Scraping**     | Selenium / WebBaseLoader |
+| **Caching**          | SQLiteCache              |
+| **Logging**          | Python Logging           |
 
-**Verify it worked:**
-```powershell
-python --version
+---
+
+## 📁 Project Structure
+
+```bash
+College-Chatbot/
+│
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── llm.py
+│   │   ├── rag.py
+│   │   ├── schemas.py
+│   │   └── logger.py
+│   │
+│   ├── data/uploads/
+│   └── vectorstore/
+│
+├── frontend/
+│   ├── streamlit_app.py
+│   └── admin.py
+│
+├── .env
+├── requirements.txt
+└── README.md
 ```
-You should see `Python 3.13.x`
 
 ---
 
-## Step 3 — Install VS Code
+## ⚙ Installation & Setup
 
-1. Go to https://code.visualstudio.com/
-2. Download and install it
-3. Open VS Code and install the **Python extension**:
-   - Click the Extensions icon on the left sidebar (looks like 4 squares)
-   - Search for `Python`
-   - Click **Install** on the one made by Microsoft
+### 1️⃣ Clone Repository
 
----
-
-## Step 4 — Install Ollama and pull the AI model
-
-Ollama runs the AI model locally on your machine — no internet connection or API key required.
-
-1. Go to https://ollama.com/download
-2. Download and install the **Windows** version
-3. **Restart your computer** after installation
-**Verify it worked:**
-```powershell
-ollama --version
+```bash
+git clone https://github.com/your-username/College-Chatbot.git
+cd College-Chatbot
 ```
-4. Open PowerShell and download the AI model the project uses:
-```powershell
+
+---
+
+### 2️⃣ Create Virtual Environment
+
+```bash
+python -m venv venv
+```
+
+#### Activate
+
+**Windows**
+
+```bash
+.\venv\Scripts\activate
+```
+
+**Linux / Mac**
+
+```bash
+source venv/bin/activate
+```
+
+---
+
+### 3️⃣ Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### 4️⃣ Install Ollama Models
+
+```bash
 ollama pull llama3.2
-```
-> ⏳ This downloads the llama3.2 model — it may take several minutes depending on your internet speed.
-
-**Test llama3.2 Locally**
-
-Run:
-```powershell
-ollama run llama3.2
-```
-Ask something simple:
-
-What is FastAPI?
-
-If you get a response → model works locally.
-
-5. For embeddings (important for RAG):
-Run:
-```powershell
 ollama pull nomic-embed-text
 ```
-> ⚠️ If `ollama` is not recognized inside VS Code terminal after installing, fully close and reopen VS Code.
 
 ---
 
-## Step 5 — Get the project on your computer
+### 5️⃣ Create `.env`
 
-**Cloning** means downloading the project from GitHub to your computer.
-
-1. Open **VS Code**
-2. Press **Ctrl + `** (backtick key, top-left of keyboard) to open the terminal
-3. Navigate to where you want to save the project. We recommend a simple path like:
-```powershell
-cd C:\Users\YourName\Documents
+```env
+ADMIN_API_KEY=your_secure_api_key_here
 ```
-4. Clone the repository:
-```powershell
-git clone https://github.com/Chitlangia-Vedant/College-Chatbot.git
-```
-5. Open the project folder in VS Code:
-```powershell
-cd College-Chatbot
-code .
-```
-
-You should now see all project files in the VS Code file explorer on the left.
 
 ---
 
-## Step 6 — Set up your Python environment
-
-A **virtual environment** is an isolated space where we install the project's packages without affecting the rest of your computer.
-
-**One-time setup — allow scripts to run in PowerShell:**
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-Press **Y** then **Enter** when asked.
-
-**Go one level above the project folder** — the virtual environment should sit next to the project, not inside it:
-```powershell
-cd C:\Users\YourName\Documents
-```
-
-**Create the virtual environment:**
-```powershell
-python -m venv My_Env
-```
-**[Your project structure should be like this](#project-structure-explained)**
-
-**Activate it:**
-```powershell
-.\My_Env\Scripts\Activate.ps1
-```
-✅ You will know it is activated when you see `(My_Env)` at the start of your terminal line.(IMP)
-
-**Go into the backend folder:**
-```powershell
-cd College-Chatbot\backend
-```
-
-**Install all dependencies:**
-```powershell
-python -m pip install -r requirements.txt
-```
-> ⏳ This installs all required packages. It may take a few minutes.
-
-**Create your `.env` file:**
-```powershell
-New-Item .env
-```
-Keep `.env` empty
-### Important: .gitignore
-
-The repository already ignores sensitive files like:
-
-.env  
-My_Env/  
-vectorstore/
-
-Never commit these files to GitHub.
+## ▶ Running the Project
 
 ---
 
-## Step 7 — Run the project
+### Start Ollama
 
-You need **two terminals** open at the same time — one for the backend, one for the frontend.
-
-> ⚠️ Every time you open a new terminal, you must activate the virtual environment first with:
-> ```powershell
-> C:\Users\YourName\Documents\My_Env\Scripts\Activate.ps1
-> ```
-
-### Terminal 1 — Start the Backend
-
-Make sure `(My_Env)` is visible in your terminal, then navigate to the backend folder:
-
-```powershell
-cd C:\Users\YourName\Documents\College-Chatbot\backend
-python -m uvicorn app.main:app --reload --port 8000
+```bash
+ollama serve
 ```
 
-✅ You should see:
-```
-INFO: Uvicorn running on http://127.0.0.1:8000
-INFO: Application startup complete.
+---
+
+### Start Backend
+
+```bash
+cd backend
+uvicorn app.main:app --reload
 ```
 
-You can test the backend by opening your browser at:
-```
+Backend Docs:
+
+```text
 http://127.0.0.1:8000/docs
 ```
-This shows interactive API documentation where you can test all endpoints.
 
-### Terminal 2 — Start the Frontend
+---
 
-Open a **new terminal** in VS Code with **Ctrl + Shift + `**, activate the venv, then:
-```powershell
-C:\Users\YourName\Documents\My_Env\Scripts\Activate.ps1
-cd C:\Users\YourName\Documents\College-Chatbot\frontend
+### Start User Chat Interface
+
+```bash
+cd frontend
 streamlit run streamlit_app.py
 ```
 
-✅ Your browser will automatically open the chatbot at:
-```
-http://localhost:8501
-```
-
-### How to use the chatbot:
-1. Upload a college PDF document using the upload button
-2. Wait for it to say "PDF ingested successfully"
-3. Type your question in the chat box
-4. The chatbot will answer using only the content from the uploaded document
-
 ---
 
-## How to work with Git daily
+### Start Admin Dashboard
 
-### Before you start working —
-#### 1. Always pull the latest code first:
-```powershell
-cd C:\Users\YourName\Documents\College-Chatbot
-git pull origin main
-```
-> This downloads any changes your teammates made. **Always do this before starting work.**
-#### 2.Always create a new branch before working:
-```powershell
-git checkout -b your-branch-name (first time) 
-# OR 
-git checkout your-branch-name (if branch already exists)
-
-git branch (Confirms the branch you are working on)
-```
-### After making changes — save and share your work:
-
-```powershell
-# Step 1 - See what files you changed
-git status
-
-# Step 2 - Stage all your changes
-git add .
-
-# Step 3 - Save a snapshot with a description
-git commit -m "what you changed"
-
-# Step 4 - Share with the team
-git push origin your-branch-name
-```
-
-**Example commit messages:**
-- `git commit -m "Added college FAQ PDF support"`
-- `git commit -m "Fixed chat history bug"`
-- `git commit -m "Updated frontend UI"`
-
-### The daily workflow in short:
-```
-git pull                                   → get latest from teammates
-git checkout -b your-branch-name           → create a new branch
-... do your work ...
-git add .                                  → stage changes
-git commit -m "explain"                    → save snapshot
-git push origin your-branch-name           → share with team
+```bash
+cd frontend
+streamlit run admin.py
 ```
 
 ---
 
-## Project structure explained
+## 🔐 Admin Credentials
 
-```
-Documents/
-│
-├── My_Env/                     ← Virtual environment (never touch this folder)
-│
-└── College-Chatbot/            ← The actual project (cloned from GitHub)
-    │
-    ├── backend/                ← FastAPI server (the brain)
-    │   ├── app/
-    │   │   ├── __init__.py     ← Makes app a Python package
-    │   │   ├── main.py         ← API routes (/ask, /upload-pdf, /ask-pdf)
-    │   │   ├── llm.py          ← AI model setup and RAG logic
-    │   │   ├── rag.py          ← PDF ingestion and vector search
-    │   │   └── schemas.py      ← Data models for API requests
-    │   │
-    │   ├── vectorstore/        ← ChromaDB stores document embeddings here
-    │   │                         (Deleting this folder resets the chatbot's knowledge)
-    │   │
-    │   ├── .env                ← Your local config (never shared on GitHub)
-    │   └── requirements.txt    ← All Python dependencies
-    │
-    └── frontend/
-        └── admin.py    ← The chatbot UI in the browser
-        └── streamlit_app.py    ← The chatbot UI in the browser
+### Admin Panel Password
+
+```text
+sgsits@admin123
 ```
 
-### API Endpoints (what the backend can do):
-| Endpoint | Method | What it does |
-|----------|--------|-------------|
-| `/` | GET | Check if backend is running |
-| `/ask` | POST | Ask the AI a general question |
-| `/upload-pdf` | POST | Upload and process a PDF document |
-| `/ask-pdf` | POST | Ask a question about the uploaded PDF |
+### Backend API Key
+
+Configured via:
+
+```env
+ADMIN_API_KEY=your_secure_api_key_here
+```
 
 ---
 
-## Common problems and fixes
+## 📡 API Endpoints
 
-### ❌ "running scripts is disabled on this system"
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+| Method | Endpoint         | Description          |
+| ------ | ---------------- | -------------------- |
+| `POST` | `/ask-pdf`       | Ask chatbot question |
+| `POST` | `/upload-pdf`    | Upload PDF           |
+| `POST` | `/upload-csv`    | Upload FAQ CSV       |
+| `POST` | `/upload-url`    | Ingest Website       |
+| `POST` | `/update-url`    | Re-Ingest Website    |
+| `POST` | `/delete-source` | Delete Source        |
+| `GET`  | `/list-sources`  | List All Sources     |
+
+---
+
+## 🧠 Advanced RAG Features
+
+### Query Reformulation
+
+Transforms follow-up questions into standalone searchable queries.
+
+**Example:**
+
+```text
+User: What is CSE fee?
+→ Reformulated:
+What is the fee for Computer Science Engineering at SGSITS?
 ```
 
-### ❌ "ollama is not recognized" in VS Code terminal
-Fully close VS Code and reopen it. If still not working, restart your computer.
+---
 
-### ❌ "No module named uvicorn" or any missing module
-Make sure `(My_Env)` is showing in your terminal, then run:
-```powershell
-python -m pip install -r requirements.txt
+### Semantic Chunking
+
+PDFs are chunked by **meaning/topic boundaries** rather than fixed text windows.
+
+---
+
+### MMR Retrieval
+
+Ensures retrieved chunks are:
+
+* Relevant
+* Diverse
+* Non-Redundant
+
+---
+
+### Response Streaming
+
+Tokens stream live to frontend for better UX.
+
+---
+
+## 📊 Logging & Monitoring
+
+Backend logs include:
+
+* API Latency
+* LLM Time-To-First-Token
+* Retrieval / Ingestion Events
+* Errors / Exceptions
+
+Saved in:
+
+```text
+chatbot_backend.log
 ```
 
-### ❌ "git push rejected"
-Someone else pushed changes before you. Run:
-```powershell
-git pull
-git push
-```
+---
 
-### ❌ Virtual environment not activating
-Make sure you are pointing to the correct path:
-```powershell
-C:\Users\YourName\Documents\My_Env\Scripts\Activate.ps1
-```
+## 🔒 Security Features
 
-### ❌ Chatbot gives wrong or empty answers
-- Make sure Ollama is running — open a new terminal and type `ollama serve`
-- Make sure you uploaded a PDF before asking questions
-- Try deleting the `vectorstore` folder and re-uploading your PDF
+* API-Key Protected Admin Endpoints
+* Input Validation & Sanitization
+* CSV Schema Validation
+* Prompt Bombing Prevention
+* Safe URL Update Logic
+* Duplicate Source Prevention
 
-### ❌ Merge conflict after git pull
+---
 
-If Git shows a conflict:
+## 🚧 Future Improvements
 
-1. Open the conflicting file
-2. Look for:
-```
-<<<<<<< HEAD
-your code
-=======
-teammate code
->>>>>>> branch
-```
+* Role-Based Admin Authentication
+* Docker Deployment
+* PostgreSQL Metadata Store
+* Hybrid Search (BM25 + Vector)
+* Analytics Dashboard
+* User Feedback Collection
 
-3. Choose the correct code
-4. Save the file
+---
 
-Then run:
-```powershell
-git add .
-git commit -m "Resolved merge conflict"
-```
+## 👨‍💻 Contributors
 
+* **Vedant Chitlangia**
+* **Anmay**
+
+---
+
+## 📜 License
+
+This project is intended for academic/institutional use.
+
+---
+
+<div align="center">
+
+### ⭐ If you found this project useful, consider starring the repository!
+
+</div>
