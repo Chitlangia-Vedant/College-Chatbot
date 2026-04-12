@@ -350,7 +350,11 @@ chatbot_backend.log
 ## 👨‍💻 Contributors
 
 * **Vedant Chitlangia**
-* **Anmay**
+* **Anmay Rai**
+* **Sanrachna Singh**
+* **Arjun Gugoriya**
+
+
 
 ---
 
