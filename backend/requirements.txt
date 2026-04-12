@@ -1,33 +1,33 @@
+# --- Web & API Frameworks ---
 fastapi
 uvicorn
+python-multipart
+streamlit
 
-# LangChain core + ecosystem
+# --- LangChain core + ecosystem ---
 langchain
 langchain-core
 langchain-community
 langchain-text-splitters
 langchain-chroma
 langchain-ollama
+langchain-experimental
 
-# Vector database
+# --- Vector database ---
 chromadb
 
-# PDF loading & Structural Chunking
+# --- PDF loading & Structural Chunking ---
 pypdf
 unstructured-client
 unstructured[pdf]
 
-# Web Scraping & HTML Parsing
+# --- Web Scraping & HTML Parsing ---
 selenium
 unstructured
 lxml
 beautifulsoup4
 
-# Environment & utilities
+# --- Environment & utilities ---
 python-dotenv
 pydantic
 requests
-python-multipart
-
-# Frontend
-streamlit
