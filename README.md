@@ -25,7 +25,7 @@ It lets you upload college documents (PDFs) and ask questions about them — the
 
 **Tech stack:**
 - **FastAPI** — backend server that handles API requests
-- **Ollama + Phi model** — runs the AI locally on your computer, no internet or API key needed
+- **Ollama + lambda3.2 model** — runs the AI locally on your computer, no internet or API key needed
 - **LangChain** — connects the AI model with the document retrieval system
 - **ChromaDB** — stores document content so the chatbot can search through it
 - **Streamlit** — the chat interface you interact with in the browser
@@ -99,15 +99,15 @@ ollama --version
 ```
 4. Open PowerShell and download the AI model the project uses:
 ```powershell
-ollama pull phi
+ollama pull lambda3.2
 ```
-> ⏳ This downloads the Phi model — it may take several minutes depending on your internet speed.
+> ⏳ This downloads the lambda3.2 model — it may take several minutes depending on your internet speed.
 
-**Test Phi Locally**
+**Test lambda3.2 Locally**
 
 Run:
 ```powershell
-ollama run phi
+ollama run lambda3.2
 ```
 Ask something simple:
 
@@ -329,6 +329,7 @@ Documents/
     │   └── requirements.txt    ← All Python dependencies
     │
     └── frontend/
+        └── admin.py    ← The chatbot UI in the browser
         └── streamlit_app.py    ← The chatbot UI in the browser
 ```
 
