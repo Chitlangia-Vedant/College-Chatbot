@@ -238,23 +238,6 @@ streamlit run admin.py
 
 ---
 
-## 🔐 Admin Credentials
-
-### Admin Panel Password
-
-```text
-sgsits@admin123
-```
-
-### Backend API Key
-
-Configured via:
-
-```env
-ADMIN_API_KEY=your_secure_api_key_here
-```
-
----
 
 ## 📡 API Endpoints
 
